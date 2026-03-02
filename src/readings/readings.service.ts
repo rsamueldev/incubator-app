@@ -3,6 +3,8 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { RedisService } from '../redis/redis.service';
 import { CreateReadingDto } from './dto/create-reading.dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { AlertsService } from '../alerts/alerts.service';
+import { AlertType } from '../alerts/dto/create-alert.dto';
 
 @Injectable()
 export class ReadingsService {
@@ -11,6 +13,7 @@ export class ReadingsService {
     constructor(
         private supabaseService: SupabaseService,
         private redisService: RedisService,
+        private alertsService: AlertsService,
     ) { }
 
     // Tarea automática (Cron) que se ejecuta cada noche a las 12:00 AM
@@ -66,6 +69,22 @@ export class ReadingsService {
             this.logger.error(`Error saving reading to Supabase: ${error.message}`);
             // No lanzamos error para no bloquear la ESP8266 si Supabase no está disponible
         }
+
+        // --- Lógica de Resolución de Alertas ---
+
+        // 1. Resolver alertas de Temperatura (Rango normal: 37.1 - 37.9)
+        if (temperature >= 37.1 && temperature <= 37.9) {
+            await this.alertsService.resolveAlerts(device_id, [AlertType.TEMP_HIGH, AlertType.TEMP_LOW]);
+        }
+
+        // 2. Resolver alertas de Humedad (Rango normal: +/- 5% del setpoint estimado de 50-70%)
+        // Como el setpoint varía, usamos un rango razonable de "normalidad" o podrías ajustarlo
+        if (humidity >= 45 && humidity <= 75) {
+            await this.alertsService.resolveAlerts(device_id, [AlertType.HUM_HIGH, AlertType.HUM_LOW]);
+        }
+
+        // 3. Resolver alertas de Motor antiguas (20 min)
+        await this.alertsService.resolveTimedAlerts(device_id);
 
         return data;
     }

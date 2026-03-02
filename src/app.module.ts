@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { SupabaseModule } from './supabase/supabase.module';
 import { RedisModule } from './redis/redis.module';
 import { ReadingsModule } from './readings/readings.module';
+import { AlertsModule } from './alerts/alerts.module';
 
 import { ScheduleModule } from '@nestjs/schedule';
 
@@ -17,7 +18,9 @@ import { ScheduleModule } from '@nestjs/schedule';
     SupabaseModule,
     RedisModule,
     ReadingsModule,
+    AlertsModule,
   ],
+
 
 
 
