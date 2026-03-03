@@ -14,15 +14,19 @@ export class SupabaseService implements OnModuleInit {
         const supabaseKey = this.configService.get<string>('SUPABASE_KEY');
 
         if (!supabaseUrl || !supabaseKey) {
-            this.logger.error('SUPABASE_URL or SUPABASE_KEY is not defined in the environment variables');
-            return;
+            this.logger.error('CRITICAL: SUPABASE_URL or SUPABASE_KEY is not defined');
+            throw new Error('Supabase configuration missing');
         }
 
         this.client = createClient(supabaseUrl, supabaseKey);
-        this.logger.log('Supabase client initialized');
+        const host = new URL(supabaseUrl).hostname;
+        this.logger.log(`Supabase client initialized for host: ${host}`);
     }
 
     getClient(): SupabaseClient {
+        if (!this.client) {
+            throw new Error('Supabase client not initialized. Check environment variables.');
+        }
         return this.client;
     }
 }

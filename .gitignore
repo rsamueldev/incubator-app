@@ -57,4 +57,7 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Guides
 Backend_Implementation_Guide.md
+incubator_firmware.cpp
 
+
+.vercel

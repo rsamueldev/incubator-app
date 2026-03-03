@@ -1,26 +1,31 @@
-import { Controller, Get, Post, Body, Param, Query, Delete, Res, Header } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, Delete, Res, Header, UseGuards, Request, Logger } from '@nestjs/common';
 import { ReadingsService } from './readings.service';
 import { CreateReadingDto } from './dto/create-reading.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { Response } from 'express';
 
 
 @Controller('readings')
 export class ReadingsController {
+    private readonly logger = new Logger(ReadingsController.name);
     constructor(private readonly readingsService: ReadingsService) { }
 
     // Recibe la lectura de la esp8266 y la guarda en la base de datos
     @Post()
     create(@Body() createReadingDto: CreateReadingDto) {
+        this.logger.log(`Incoming reading from device: ${createReadingDto.device_id} [T: ${createReadingDto.temperature}°C, H: ${createReadingDto.humidity}%]`);
         return this.readingsService.create(createReadingDto);
     }
 
     // Obtiene la ultima lectura de un dispositivo
+    @UseGuards(JwtAuthGuard)
     @Get('latest/:deviceId')
     getLatest(@Param('deviceId') deviceId: string) {
         return this.readingsService.getLatest(deviceId);
     }
 
     // Obtiene el historial de lecturas de un dispositivo
+    @UseGuards(JwtAuthGuard)
     @Get('history/:deviceId')
     getHistory(
         @Param('deviceId') deviceId: string,

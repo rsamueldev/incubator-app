@@ -5,6 +5,7 @@ import { CreateReadingDto } from './dto/create-reading.dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { AlertsService } from '../alerts/alerts.service';
 import { AlertType } from '../alerts/dto/create-alert.dto';
+import { DevicesService } from '../devices/devices.service';
 
 @Injectable()
 export class ReadingsService {
@@ -14,6 +15,7 @@ export class ReadingsService {
         private supabaseService: SupabaseService,
         private redisService: RedisService,
         private alertsService: AlertsService,
+        private devicesService: DevicesService,
     ) { }
 
     // Tarea automática (Cron) que se ejecuta cada noche a las 12:00 AM
@@ -41,52 +43,65 @@ export class ReadingsService {
     async create(createReadingDto: CreateReadingDto) {
         const { device_id, temperature, humidity } = createReadingDto;
 
-        // Guardado de lectura en Redis para acceder a los datos en tiempo real
-        const redisKey = `device:${device_id}:latest`;
-        await this.redisService.set(redisKey, {
-            temperature,
-            humidity,
-            timestamp: new Date().toISOString(),
-        }, 3600); // 1 hora de TTL por seguridad
-
-        // Muestra lecturas en tiempo real en la consola
-        this.logger.log(`[REAL-TIME] Reading stored in Redis for device ${device_id}: ${temperature}°C, ${humidity}%`);
-
-
-        // Guardado de lectura en Supabase para datos historicos
-        const { data, error } = await this.supabaseService
-            .getClient()
-            .from('Reading')
-            .insert({
-                device_id,
+        try {
+            // Guardado de lectura en Redis (No bloqueante para la respuesta final)
+            const redisKey = `device:${device_id}:latest`;
+            this.redisService.set(redisKey, {
                 temperature,
                 humidity,
-            })
-            .select()
-            .single();
+                timestamp: new Date().toISOString(),
+            }, 3600).catch(err => this.logger.error(`Redis Error: ${err.message}`));
 
-        if (error) {
-            this.logger.error(`Error saving reading to Supabase: ${error.message}`);
-            // No lanzamos error para no bloquear la ESP8266 si Supabase no está disponible
+            // Guardado en Supabase
+            const { data, error } = await this.supabaseService
+                .getClient()
+                .from('Reading')
+                .insert({
+                    device_id,
+                    temperature,
+                    humidity,
+                })
+                .select()
+                .maybeSingle();
+
+            if (error) {
+                this.logger.error(`[SUPABASE ERROR] ${error.message}`);
+                return data || { success: false, error: error.message };
+            }
+
+            // --- Lógica de Alertas en Segundo Plano ---
+            (async () => {
+                try {
+                    const device = await this.devicesService.findById(device_id);
+                    if (device) {
+                        const setpoint = (device.mode === 2) ? 37.75 : 37.65;
+                        if (temperature < setpoint + 0.3 && temperature > setpoint - 0.3) {
+                            await this.alertsService.resolveAlerts(device_id, [AlertType.TEMP_HIGH, AlertType.TEMP_LOW]);
+                        } else if (temperature < setpoint + 0.3) {
+                            await this.alertsService.resolveAlerts(device_id, [AlertType.TEMP_HIGH]);
+                        } else if (temperature > setpoint - 0.3) {
+                            await this.alertsService.resolveAlerts(device_id, [AlertType.TEMP_LOW]);
+                        }
+
+                        if (humidity <= 78.0 && humidity >= 42.0) {
+                            await this.alertsService.resolveAlerts(device_id, [AlertType.HUM_HIGH, AlertType.HUM_LOW]);
+                        } else if (humidity <= 78.0) {
+                            await this.alertsService.resolveAlerts(device_id, [AlertType.HUM_HIGH]);
+                        } else if (humidity >= 42.0) {
+                            await this.alertsService.resolveAlerts(device_id, [AlertType.HUM_LOW]);
+                        }
+                    }
+                    await this.alertsService.resolveTimedAlerts(device_id);
+                } catch (e) {
+                    this.logger.error(`Alert resolve error: ${e.message}`);
+                }
+            })();
+
+            return data || { success: true };
+        } catch (globalError) {
+            this.logger.error(`CRITICAL ERROR in create reading: ${globalError.message}`);
+            return { success: false, message: globalError.message };
         }
-
-        // --- Lógica de Resolución de Alertas ---
-
-        // 1. Resolver alertas de Temperatura (Rango normal: 37.1 - 37.9)
-        if (temperature >= 37.1 && temperature <= 37.9) {
-            await this.alertsService.resolveAlerts(device_id, [AlertType.TEMP_HIGH, AlertType.TEMP_LOW]);
-        }
-
-        // 2. Resolver alertas de Humedad (Rango normal: +/- 5% del setpoint estimado de 50-70%)
-        // Como el setpoint varía, usamos un rango razonable de "normalidad" o podrías ajustarlo
-        if (humidity >= 45 && humidity <= 75) {
-            await this.alertsService.resolveAlerts(device_id, [AlertType.HUM_HIGH, AlertType.HUM_LOW]);
-        }
-
-        // 3. Resolver alertas de Motor antiguas (20 min)
-        await this.alertsService.resolveTimedAlerts(device_id);
-
-        return data;
     }
 
     // Obtiene la ultima lectura de un dispositivo
@@ -104,7 +119,7 @@ export class ReadingsService {
             .eq('device_id', deviceId)
             .order('created_at', { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
         return data;
     }

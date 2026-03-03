@@ -9,7 +9,27 @@ async function bootstrap() {
     transform: true,
   }));
   app.enableCors();
-  await app.listen(process.env.PORT ?? 3000);
+  const port = process.env.PORT ?? 3000;
+
+  // Vercel handles the listening, but we still need this for local development
+  if (process.env.NODE_ENV !== 'production') {
+    await app.listen(port, '0.0.0.0');
+    console.log(`\n🚀 Backend Incubadora iniciado localmente!`);
+    console.log(`🏠 Acceso Local: http://localhost:${port}`);
+    console.log(`🌐 Acceso ESP8266: http://192.168.0.17:${port}\n`);
+  }
+
+  await app.init();
+  const expressApp = app.getHttpAdapter().getInstance();
+  return expressApp;
 }
 
-bootstrap();
+// Exportamos el manejador para Vercel
+let server: any;
+
+export default async (req: any, res: any) => {
+  if (!server) {
+    server = await bootstrap();
+  }
+  return server(req, res);
+};

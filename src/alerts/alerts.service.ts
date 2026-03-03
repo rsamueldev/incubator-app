@@ -25,7 +25,7 @@ export class AlertsService {
                 is_resolved: false,
             })
             .select()
-            .single();
+            .maybeSingle();
 
 
         if (error) {

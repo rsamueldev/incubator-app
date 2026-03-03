@@ -1,12 +1,20 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Logger } from '@nestjs/common';
 import { AppService } from './app.service';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  private readonly logger = new Logger(AppController.name);
+  constructor(private readonly appService: AppService) { }
 
   @Get()
   getHello(): string {
+    this.logger.log('Ping received on root (/)');
     return this.appService.getHello();
+  }
+
+  @Get('ping')
+  getPing(): string {
+    this.logger.log('Ping received on /ping');
+    return 'pong';
   }
 }

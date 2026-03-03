@@ -1,15 +1,13 @@
 import { Module } from '@nestjs/common';
-import { AlertsService } from './alerts.service';
-import { AlertsController } from './alerts.controller';
+import { DevicesService } from './devices.service';
+import { DevicesController } from './devices.controller';
 import { SupabaseModule } from '../supabase/supabase.module';
-import { DevicesModule } from '../devices/devices.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
     imports: [
         SupabaseModule,
-        DevicesModule,
         JwtModule.registerAsync({
             imports: [ConfigModule],
             inject: [ConfigService],
@@ -18,8 +16,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
             }),
         }),
     ],
-    controllers: [AlertsController],
-    providers: [AlertsService],
-    exports: [AlertsService],
+    controllers: [DevicesController],
+    providers: [DevicesService],
+    exports: [DevicesService],
 })
-export class AlertsModule { }
+export class DevicesModule { }

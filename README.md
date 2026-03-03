@@ -34,18 +34,63 @@ La estructura de la base de datos sigue un diseño orientado a la escalabilidad:
 - Base de Datos: PostgreSQL, Supabase.
 - Comunicación: Protocolo HTTP con intercambio de datos en formato JSON.
 
-## Configuracion del Entorno
+## Pre-requisitos
 
-### Backend
-1. Clonar el repositorio y ejecutar npm install para instalar las dependencias.
-2. Configurar las variables de entorno SUPABASE_URL y SUPABASE_KEY en un archivo .env.
-3. Iniciar el servidor mediante npm run start:dev.
+- **Node.js**: Versión 16 o superior.
+- **Supabase**: Cuenta activa y un proyecto creado (PostgreSQL + Auth).
+- **Redis**: Se recomienda **Upstash** (Serverless Redis) para compatibilidad con Vercel.
+- **Arduino IDE**: Con soporte para ESP8266 y librerías necesarias (DHT, ArduinoJson, WiFiManager, SSD1306Wire).
 
-### Firmware
-1. Abrir el proyecto en el IDE de Arduino.
-2. Configurar las credenciales de la red local (SSID/Password).
-3. Insertar el UUID del dispositivo generado en la tabla de base de datos en la variable de endpoint.
-4. Realizar el despliegue a la placa ESP8266.
+## Instalación y Configuración
+
+### 1. Clonar el Repositorio
+```bash
+git clone https://github.com/rsamueldev/incubator-app.git
+cd incubator-app
+```
+
+### 2. Configuración del Backend (.env)
+Crea un archivo `.env` en la raíz con las siguientes variables:
+```env
+# Supabase
+SUPABASE_URL=https://tu-proyecto.supabase.co
+SUPABASE_KEY=tu-anon-key
+
+# Redis (Upstash recomendado)
+REDIS_HOST=tu-redis-host.upstash.io
+REDIS_PORT=6379
+REDIS_PASSWORD=tu-password
+
+# Seguridad
+JWT_SECRET=una-clave-secreta-segura
+```
+
+### 3. Ejecución Local
+```bash
+npm install
+npm run start:dev
+```
+El servidor iniciará en `http://localhost:3000`.
+
+### 4. Despliegue en Producción (Vercel)
+El proyecto está configurado para Vercel. Solo necesitas:
+1. Instalar Vercel CLI: `npm i -g vercel`
+2. Ejecutar: `vercel`
+3. Configurar las variables de entorno en el panel de Vercel.
+
+---
+
+## Configuración del Firmware (ESP8266)
+
+1. Abre `incubator_firmware.cpp` en Arduino IDE.
+2. Asegúrate de tener instaladas las librerías: `DHT sensor library`, `ArduinoJson`, `WiFiManager`, `ESP8266_and_ESP32_OLED_Driver_for_SSD1306_displays`.
+3. Sube el código a tu placa NodeMCU/ESP8266.
+4. **Portal Cautivo**: Al encenderse, si no hay WiFi, la placa creará un punto de acceso llamado `Incubadora_Config`. Conéctate con tu celular para configurar el WiFi y la URL del servidor (ej: `https://tu-app.vercel.app`).
+
+---
+
+## Documentación Adicional
+- [Guía de Flujo del Sistema](./System_Flow_Guide.md): Detalle técnico de la lógica y referencia completa de la API para el equipo de Frontend.
 
 ## Funcionamiento General
 
