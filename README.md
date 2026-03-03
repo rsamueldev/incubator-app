@@ -87,6 +87,18 @@ El proyecto está configurado para Vercel. Solo necesitas:
 3. Sube el código a tu placa NodeMCU/ESP8266.
 4. **Portal Cautivo**: Al encenderse, si no hay WiFi, la placa creará un punto de acceso llamado `Incubadora_Config`. Conéctate con tu celular para configurar el WiFi y la URL del servidor (ej: `https://tu-app.vercel.app`).
 
+### Verificación del Hardware (Monitor Serie)
+
+Para confirmar que la incubadora se está comunicando correctamente con el backend:
+1. Conecta la ESP8266 a tu PC.
+2. Abre el **Monitor Serie** en el IDE de Arduino.
+3. Configura la velocidad a **115200 baudios**.
+4. Deberías ver los siguientes mensajes:
+   - `[WIFI] CONECTADO`: WiFi establecido con éxito.
+   - `[SERVER] Prueba /ping EXITOSA: 200`: El backend respondió correctamente.
+   - `[HTTP] Respuesta Lectura: 201`: Los datos de temperatura/humedad se guardaron en la nube.
+   - `[SYNC] Respuesta: 200`: El modo de huevo se sincronizó correctamente.
+
 ---
 
 ## Documentación Adicional
