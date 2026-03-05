@@ -51,19 +51,21 @@ export const NotificationsView = ({ onBack, deviceId }: { onBack: () => void, de
                         </div>
                     ) : alerts.length > 0 ? (
                         alerts.map((alert: any, i) => (
-                            <div key={i} className={`p-6 rounded-[2rem] border transition-all ${alert.is_resolved ? 'bg-[#18181b]/50 border-[#27272a]' : 'bg-[#18181b] border-emerald-500/30 shadow-lg shadow-emerald-500/5'}`}>
+                            <div key={i} className={`relative p-6 rounded-[2rem] border transition-all ${alert.is_resolved ? 'bg-[#18181b]/50 border-[#27272a]' : 'bg-[#18181b] border-emerald-500/30 shadow-lg shadow-emerald-500/5'}`}>
+                                {/* Hora en la esquina superior derecha */}
+                                <span className="absolute top-6 right-8 text-[10px] text-gray-500 font-black uppercase tracking-wider">
+                                    {new Date(alert.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+
                                 <div className="flex gap-4">
                                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${alert.is_resolved ? 'bg-gray-800' : 'bg-emerald-500/10'}`}>
                                         {getAlertIcon(alert.type)}
                                     </div>
-                                    <div className="space-y-1">
-                                        <div className="flex justify-between items-start">
-                                            <p className="font-black text-sm">{alert.type.replace('_', ' ')}</p>
-                                            <span className="text-[10px] text-gray-600 font-bold uppercase">{new Date(alert.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                        </div>
-                                        <p className="text-xs text-gray-500 leading-relaxed">{alert.message}</p>
+                                    <div className="space-y-1 pr-12">
+                                        <p className="font-black text-sm">{alert.type.replace('_', ' ')}</p>
+                                        <p className="text-xs text-gray-400 leading-relaxed">{alert.message}</p>
                                         {alert.is_resolved && (
-                                            <p className="text-[9px] text-emerald-500 font-bold uppercase tracking-wider mt-2 flex items-center gap-1">
+                                            <p className="text-[9px] text-emerald-500 font-black uppercase tracking-wider mt-2 flex items-center gap-1">
                                                 <CheckCircle size={10} /> Resuelto
                                             </p>
                                         )}

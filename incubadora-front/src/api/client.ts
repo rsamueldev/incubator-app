@@ -56,6 +56,13 @@ export const getHistory = async (deviceId: string) => {
   return response.data;
 };
 
+export const exportCSV = async (deviceId: string) => {
+  const response = await apiClient.get(`/readings/export/${deviceId}`, {
+    responseType: 'blob', // Importante para manejar archivos
+  });
+  return response.data;
+};
+
 // --- FUNCIONES DE ALERTAS ---
 
 export const getAlerts = async (deviceId: string) => {

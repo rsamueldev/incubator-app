@@ -24,6 +24,12 @@ function App() {
   const [alertsEnabled, setAlertsEnabled] = useState(true);
   const [tempLimit, setTempLimit] = useState(38.5);
 
+  /**
+   * NOTA: El mantenimiento de la base de datos (limpieza de lecturas y alertas antiguas)
+   * se realiza automáticamente en el servidor (Backend) mediante tareas CRON 
+   * configuradas a las 12:00 AM (Midnight).
+   */
+
   // Verificar sesión al cargar
   useEffect(() => {
     const token = localStorage.getItem('access_token');

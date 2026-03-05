@@ -1,19 +1,40 @@
 import { useEffect, useState } from 'react';
 import {
   Thermometer, Droplets, LayoutGrid, Clock,
-  Bell, Settings, LogOut, Activity, ChevronDown
+  Bell, Settings, LogOut, Activity, ChevronDown, FileDown, Loader2
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis,
   Tooltip, ResponsiveContainer, CartesianGrid
 } from 'recharts';
-import { getLatestReading, getHistory, getAlerts } from '../api/client';
+import { getLatestReading, getHistory, getAlerts, exportCSV } from '../api/client';
 
 export const Dashboard = ({ onLogout, setView, selectedDevice, devices, onSelectDevice }: any) => {
   const [latest, setLatest] = useState<any>(null);
   const [history, setHistory] = useState([]);
   const [alerts, setAlerts] = useState<any[]>([]);
   const [showDeviceSelector, setShowDeviceSelector] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportCSV = async () => {
+    if (!selectedDevice) return;
+    setIsExporting(true);
+    try {
+      const data = await exportCSV(selectedDevice.device_id);
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `reporte_${selectedDevice.device_name.replace(/\s+/g, '_')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (e) {
+      console.error("Error al exportar CSV:", e);
+      alert("Error al descargar el archivo");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   useEffect(() => {
     if (!selectedDevice) return;
@@ -52,9 +73,20 @@ export const Dashboard = ({ onLogout, setView, selectedDevice, devices, onSelect
           <div className="flex items-center gap-3 relative">
             <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-black font-black">I</div>
             <div className="cursor-pointer" onClick={() => setShowDeviceSelector(!showDeviceSelector)}>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 <h1 className="font-bold text-sm leading-none">{selectedDevice?.device_name || 'Incubadora'}</h1>
                 <ChevronDown size={14} className={`text-emerald-500 transition-transform ${showDeviceSelector ? 'rotate-180' : ''}`} />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation(); // Evita abrir el selector
+                    handleExportCSV();
+                  }}
+                  disabled={isExporting}
+                  className="ml-2 p-1.5 hover:bg-emerald-500/10 rounded-lg text-emerald-500 transition-all active:scale-95 disabled:opacity-50"
+                  title="Exportar Reporte CSV"
+                >
+                  {isExporting ? <Loader2 className="animate-spin" size={14} /> : <FileDown size={14} />}
+                </button>
               </div>
               <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">Estado: En Vivo</span>
             </div>
