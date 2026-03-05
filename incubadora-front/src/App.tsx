@@ -22,7 +22,7 @@ function App() {
 
   // --- ESTADOS DE CONFIGURACIÓN ---
   const [alertsEnabled, setAlertsEnabled] = useState(true);
-  const [tempLimit, setTempLimit] = useState(38.5);
+  const [tempLimit] = useState(38.5);
 
   /**
    * NOTA: El mantenimiento de la base de datos (limpieza de lecturas y alertas antiguas)
