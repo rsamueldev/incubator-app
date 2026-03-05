@@ -155,7 +155,7 @@ export const Dashboard = ({ onLogout, setView, selectedDevice, devices, onSelect
 
             <div className="h-56 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={history.length > 0 ? history : staticData}>
+                <AreaChart data={history.length > 0 ? [...history].reverse() : staticData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#27272a" opacity={0.3} />
                   <XAxis dataKey="created_at" hide />
                   <YAxis hide domain={[0, 50]} />
