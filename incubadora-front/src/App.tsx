@@ -3,8 +3,9 @@ import { Dashboard } from './components/Dashboard';
 import { Login } from './components/Login';
 import { Register } from './components/Register';
 import { HistoryView } from './components/HistoryView';
+import { NotificationsView } from './components/NotificationsView';
 import { getUserDevices, linkDevice } from './api/client';
-import { LayoutGrid, Plus, Cpu, LogOut, Loader2 } from 'lucide-react';
+import { Plus, Cpu, Loader2, LogOut, Bell, ShieldCheck, Thermometer } from 'lucide-react';
 
 function App() {
   // --- ESTADOS DE AUTENTICACIÓN ---
@@ -18,6 +19,10 @@ function App() {
 
   // --- ESTADOS DE NAVEGACIÓN ---
   const [currentView, setCurrentView] = useState('dashboard');
+
+  // --- ESTADOS DE CONFIGURACIÓN ---
+  const [alertsEnabled, setAlertsEnabled] = useState(true);
+  const [tempLimit, setTempLimit] = useState(38.5);
 
   // Verificar sesión al cargar
   useEffect(() => {
@@ -141,25 +146,99 @@ function App() {
         />
       )}
 
-      {/* ... otras vistas (notificaciones, ajustes) ... */}
-      {currentView === 'notifications' && (
-        <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
-          <h2 className="text-2xl font-black">Notificaciones</h2>
-          <button onClick={() => setCurrentView('dashboard')} className="mt-10 bg-[#18181b] px-10 py-4 rounded-2xl border border-[#27272a] font-bold text-xs uppercase">Volver</button>
-        </div>
+      {/* 4. Vista de Notificaciones REAL */}
+      {currentView === 'notifications' && selectedDevice && (
+        <NotificationsView
+          deviceId={selectedDevice.device_id}
+          onBack={() => setCurrentView('dashboard')}
+        />
       )}
 
+      {/* 5. Vista de Ajustes Funcional */}
       {currentView === 'settings' && (
-        <div className="max-w-[450px] mx-auto p-8">
-          <header className="mb-10">
-            <h2 className="text-3xl font-black">Configuración</h2>
-          </header>
-          <div className="p-6 bg-[#18181b] rounded-[2rem] border border-[#27272a] mb-4">
-            <p className="font-bold">Usuario</p>
-            <p className="text-xs text-gray-500">Sesión iniciada correctamente</p>
+        <div className="flex justify-center bg-[#09090b] min-h-screen text-white">
+          <div className="w-full max-w-[450px] bg-[#09090b] border-x border-[#27272a] min-h-screen p-8 animate-in slide-in-from-right duration-500">
+            <header className="mb-10 flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-black">Configuración</h2>
+                <p className="text-gray-500 text-sm italic">Personaliza tu terminal</p>
+              </div>
+              <button onClick={handleLogout} className="p-3 bg-red-500/10 text-red-500 rounded-2xl border border-red-500/20 hover:bg-red-500 hover:text-white transition-all">
+                <LogOut size={20} />
+              </button>
+            </header>
+
+            <div className="space-y-6">
+              {/* Perfil Simple */}
+              <div className="p-6 bg-[#18181b] rounded-[2.5rem] border border-[#27272a] flex items-center gap-4">
+                <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500">
+                  <ShieldCheck size={24} />
+                </div>
+                <div>
+                  <p className="font-black text-sm">Estado de Cuenta</p>
+                  <p className="text-[10px] text-gray-500 uppercase font-black">Sincronizado con Supabase</p>
+                </div>
+              </div>
+
+              {/* Interruptor de Alertas */}
+              <div
+                onClick={() => setAlertsEnabled(!alertsEnabled)}
+                className={`p-6 bg-[#18181b] rounded-[2.5rem] border transition-all cursor-pointer flex justify-between items-center ${alertsEnabled ? 'border-emerald-500/30' : 'border-[#27272a] opacity-60'}`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${alertsEnabled ? 'bg-emerald-500 text-black' : 'bg-gray-800 text-gray-500'}`}>
+                    <Bell size={18} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm">Alertas del Sistema</p>
+                    <p className="text-[10px] text-gray-500 uppercase font-black">Notificaciones Push</p>
+                  </div>
+                </div>
+                <div className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${alertsEnabled ? 'bg-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-gray-800'}`}>
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${alertsEnabled ? 'right-1' : 'left-1'}`}></div>
+                </div>
+              </div>
+
+              {/* Ajuste de Límite (Visual) */}
+              <div className="p-6 bg-[#18181b] rounded-[2.5rem] border border-[#27272a] flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-orange-500/10 rounded-xl flex items-center justify-center text-orange-500">
+                    <Thermometer size={18} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm">Límite Crítico</p>
+                    <p className="text-[10px] text-gray-500 uppercase font-black">Temperatura Máxima</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-emerald-500 font-black text-xl">{tempLimit}°C</span>
+                </div>
+              </div>
+
+              {/* Cerrar Sesión Secundario */}
+              <div
+                onClick={handleLogout}
+                className="p-6 bg-[#18181b] rounded-[2.5rem] border border-[#27272a] flex justify-between items-center cursor-pointer hover:bg-red-500/5 group transition-all"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center text-red-500 group-hover:bg-red-500 group-hover:text-white transition-all">
+                    <LogOut size={18} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm">Cerrar Sesión</p>
+                    <p className="text-[10px] text-gray-500 uppercase font-black">Desconectar cuenta</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setCurrentView('dashboard')}
+              className="w-full mt-10 bg-emerald-500 text-black font-black py-5 rounded-3xl shadow-xl shadow-emerald-500/10 hover:scale-[1.02] active:scale-95 transition-all"
+            >
+              VOLVER AL PANEL
+            </button>
           </div>
-          <button onClick={handleLogout} className="w-full bg-red-500/10 text-red-500 font-black py-4 rounded-2xl border border-red-500/20 mb-4">CERRAR SESIÓN</button>
-          <button onClick={() => setCurrentView('dashboard')} className="w-full bg-emerald-500 text-black font-black py-4 rounded-2xl">VOLVER</button>
         </div>
       )}
     </div>

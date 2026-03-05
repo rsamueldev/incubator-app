@@ -1,21 +1,9 @@
 import axios from 'axios';
 
-// API_URL: La dirección base de tu servidor backend.
-// Usamos import.meta.env para leer desde el archivo .env (VITE_API_URL)
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// API_URL: La dirección base del servidor backend.
+const API_URL = import.meta.env.VITE_API_URL;
 
-/**
- * ¿Qué es Axios?
- * Axios es una librería cliente HTTP que nos permite hacer peticiones (GET, POST, etc.) 
- * a un servidor de forma sencilla. Maneja automáticamente la conversión a JSON y 
- * nos permite configurar comportamientos globales.
- */
-
-/**
- * ¿Qué es apiClient?
- * Es una "instancia" personalizada de Axios. Al crearla, le definimos una configuración
- * base (como el baseURL) para no tener que escribir la URL completa en cada petición.
- */
+// apiClient: Instancia personalizada de Axios con configuración base.
 const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
@@ -23,12 +11,7 @@ const apiClient = axios.create({
   },
 });
 
-/**
- * Interceptores: El "peaje" de las peticiones.
- * Antes de que CUALQUIER petición salga al servidor, este interceptor se ejecuta.
- * Aquí buscamos el token de acceso en el localStorage y, si existe, lo añadimos
- * automáticamente al encabezado Authorization de la petición.
- */
+// Interceptores: Añade el token de acceso a las peticiones.
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token');
   if (token) {
@@ -70,5 +53,12 @@ export const getLatestReading = async (deviceId: string) => {
 
 export const getHistory = async (deviceId: string) => {
   const response = await apiClient.get(`/readings/history/${deviceId}`);
+  return response.data;
+};
+
+// --- FUNCIONES DE ALERTAS ---
+
+export const getAlerts = async (deviceId: string) => {
+  const response = await apiClient.get(`/alerts/${deviceId}`);
   return response.data;
 };

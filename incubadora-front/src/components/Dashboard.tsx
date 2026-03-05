@@ -7,11 +7,12 @@ import {
   AreaChart, Area, XAxis, YAxis,
   Tooltip, ResponsiveContainer, CartesianGrid
 } from 'recharts';
-import { getLatestReading, getHistory } from '../api/client';
+import { getLatestReading, getHistory, getAlerts } from '../api/client';
 
 export const Dashboard = ({ onLogout, setView, selectedDevice, devices, onSelectDevice }: any) => {
   const [latest, setLatest] = useState<any>(null);
   const [history, setHistory] = useState([]);
+  const [alerts, setAlerts] = useState<any[]>([]);
   const [showDeviceSelector, setShowDeviceSelector] = useState(false);
 
   useEffect(() => {
@@ -21,8 +22,13 @@ export const Dashboard = ({ onLogout, setView, selectedDevice, devices, onSelect
       try {
         const current = await getLatestReading(selectedDevice.device_id);
         const past = await getHistory(selectedDevice.device_id);
+
         if (current) setLatest(current);
         if (past) setHistory(past);
+
+        // Cargar alertas reales
+        const recentAlerts = await getAlerts(selectedDevice.device_id);
+        setAlerts(recentAlerts.filter((a: any) => !a.is_resolved));
       } catch (e) {
         setLatest(null);
       }
@@ -144,7 +150,14 @@ export const Dashboard = ({ onLogout, setView, selectedDevice, devices, onSelect
         <nav className="fixed bottom-0 w-full max-w-[450px] bg-[#09090b]/90 backdrop-blur-xl border-t border-[#27272a] px-10 py-6 flex justify-between rounded-b-[2rem]">
           <LayoutGrid className="text-emerald-500 cursor-pointer" onClick={() => setView('dashboard')} />
           <Clock className="text-gray-600 hover:text-emerald-500 transition-colors" onClick={() => setView('history')} />
-          <Bell className="text-gray-600 hover:text-emerald-500 transition-colors" onClick={() => setView('notifications')} />
+          <div className="relative cursor-pointer" onClick={() => setView('notifications')}>
+            <Bell className="text-gray-600 hover:text-emerald-500 transition-colors" />
+            {alerts.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[8px] font-black border-2 border-[#09090b]">
+                {alerts.length}
+              </span>
+            )}
+          </div>
           <Settings className="text-gray-600 hover:text-emerald-500 transition-colors" onClick={() => setView('settings')} />
         </nav>
       </div>
