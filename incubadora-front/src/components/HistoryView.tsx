@@ -2,20 +2,20 @@ import { useEffect, useState } from 'react';
 import { getHistory } from '../api/client';
 import { ChevronLeft, Clock, Search } from 'lucide-react';
 
-export const HistoryView = ({ onBack }: { onBack: () => void }) => {
+export const HistoryView = ({ onBack, deviceId }: { onBack: () => void, deviceId: string }) => {
   const [logs, setLogs] = useState([]);
 
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const data = await getHistory('1');
+        const data = await getHistory(deviceId);
         if (data) setLogs(data);
       } catch (e) {
         console.error("Error al cargar historial");
       }
     };
     fetchHistory();
-  }, []);
+  }, [deviceId]);
 
   return (
     <div className="flex justify-center bg-[#09090b] min-h-screen text-white">

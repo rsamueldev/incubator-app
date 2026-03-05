@@ -1,32 +1,84 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { Login } from './components/Login';
 import { Register } from './components/Register';
 import { HistoryView } from './components/HistoryView';
+import { getUserDevices, linkDevice } from './api/client';
+import { LayoutGrid, Plus, Cpu, LogOut, Loader2 } from 'lucide-react';
 
 function App() {
   // --- ESTADOS DE AUTENTICACIÓN ---
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-  
+  const [loading, setLoading] = useState(true);
+
+  // --- ESTADOS DE DISPOSITIVO ---
+  const [devices, setDevices] = useState<any[]>([]);
+  const [selectedDevice, setSelectedDevice] = useState<any>(null);
+
   // --- ESTADOS DE NAVEGACIÓN ---
   const [currentView, setCurrentView] = useState('dashboard');
 
-  // --- ESTADOS DE CONFIGURACIÓN (FUNCIONALES) ---
-  const [alertsEnabled, setAlertsEnabled] = useState(true);
-  const [tempLimit, setTempLimit] = useState(38.5);
+  // Verificar sesión al cargar
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      setIsAuthenticated(true);
+      fetchDevices();
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchDevices = async () => {
+    setLoading(true);
+    try {
+      const userDevices = await getUserDevices();
+      setDevices(userDevices);
+      if (userDevices.length > 0) {
+        setSelectedDevice(userDevices[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching devices:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+    fetchDevices();
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    setIsAuthenticated(false);
+    setDevices([]);
+    setSelectedDevice(null);
+    setAuthMode('login');
+  };
+
+  // Pantalla de carga inicial
+  if (loading && isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#09090b] text-white">
+        <Loader2 className="animate-spin text-emerald-500" size={48} />
+      </div>
+    );
+  }
 
   // Lógica para mostrar Login o Registro si no está autenticado
   if (!isAuthenticated) {
     return authMode === 'login' ? (
-      <Login 
-        onLogin={() => setIsAuthenticated(true)} 
-        onGoToRegister={() => setAuthMode('register')} 
+      <Login
+        onLogin={handleLoginSuccess}
+        onGoToRegister={() => setAuthMode('register')}
       />
     ) : (
-      <Register 
-        onBack={() => setAuthMode('login')} 
-        onRegisterSuccess={() => setAuthMode('login')} 
+      <Register
+        onBack={() => setAuthMode('login')}
+        onRegisterSuccess={() => setAuthMode('login')}
       />
     );
   }
@@ -34,95 +86,130 @@ function App() {
   // --- RENDERIZADO DE VISTAS DEL PANEL ---
   return (
     <div className="bg-[#09090b] min-h-screen text-white">
-      
+
       {/* 1. Vista de Panel Principal */}
       {currentView === 'dashboard' && (
-        <Dashboard 
-          onLogout={() => {
-            setIsAuthenticated(false);
-            setAuthMode('login');
-          }} 
-          setView={setCurrentView} 
-        />
-      )}
-      
-      {/* 2. Vista de Historial (Separada) */}
-      {currentView === 'history' && (
-        <HistoryView onBack={() => setCurrentView('dashboard')} />
+        <>
+          {devices.length === 0 ? (
+            <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
+              <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6 border border-emerald-500/20">
+                <Cpu className="text-emerald-500" size={32} />
+              </div>
+              <h2 className="text-2xl font-black">No hay dispositivos</h2>
+              <p className="text-gray-500 mt-2 text-sm max-w-xs">
+                Parece que no tienes ninguna incubadora vinculada a tu cuenta.
+              </p>
+              <button
+                onClick={() => setCurrentView('link_device')}
+                className="mt-10 bg-emerald-500 text-black px-10 py-4 rounded-2xl font-black text-sm flex items-center gap-2"
+              >
+                <Plus size={20} />
+                VINCULAR AHORA
+              </button>
+              <button onClick={handleLogout} className="mt-4 text-gray-500 font-bold text-xs uppercase hover:text-red-500 transition-colors">
+                Cerrar Sesión
+              </button>
+            </div>
+          ) : (
+            <Dashboard
+              onLogout={handleLogout}
+              setView={setCurrentView}
+              selectedDevice={selectedDevice}
+              devices={devices}
+              onSelectDevice={setSelectedDevice}
+            />
+          )}
+        </>
       )}
 
-      {/* 3. Vista de Notificaciones */}
+      {/* 2. Vista de Historial */}
+      {currentView === 'history' && selectedDevice && (
+        <HistoryView
+          deviceId={selectedDevice.device_id}
+          onBack={() => setCurrentView('dashboard')}
+        />
+      )}
+
+      {/* 3. Vista de Vinculación de Dispositivo */}
+      {currentView === 'link_device' && (
+        <DeviceLinker
+          onSuccess={() => {
+            fetchDevices();
+            setCurrentView('dashboard');
+          }}
+          onCancel={() => setCurrentView('dashboard')}
+        />
+      )}
+
+      {/* ... otras vistas (notificaciones, ajustes) ... */}
       {currentView === 'notifications' && (
-        <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center animate-in fade-in">
-          <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6 border border-emerald-500/20">
-            <span className="text-emerald-500 text-3xl">🔔</span>
-          </div>
+        <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
           <h2 className="text-2xl font-black">Notificaciones</h2>
-          <p className="text-gray-500 mt-2 text-sm">
-            {alertsEnabled ? 'El sistema de alertas está activo.' : 'Las alertas están desactivadas.'}
-          </p>
-          <button 
-            onClick={() => setCurrentView('dashboard')}
-            className="mt-10 bg-[#18181b] px-10 py-4 rounded-2xl border border-[#27272a] font-bold text-xs uppercase tracking-widest"
-          >
-            Volver
-          </button>
+          <button onClick={() => setCurrentView('dashboard')} className="mt-10 bg-[#18181b] px-10 py-4 rounded-2xl border border-[#27272a] font-bold text-xs uppercase">Volver</button>
         </div>
       )}
 
-      {/* 4. Vista de Ajustes (Con Alertas Funcionales) */}
       {currentView === 'settings' && (
-        <div className="max-w-[450px] mx-auto p-8 animate-in slide-in-from-right duration-500">
+        <div className="max-w-[450px] mx-auto p-8">
           <header className="mb-10">
             <h2 className="text-3xl font-black">Configuración</h2>
-            <p className="text-gray-500 text-sm">Personaliza tu incubadora</p>
           </header>
-          
-          <div className="space-y-4">
-            {/* Interruptor de Alertas */}
-            <div 
-              onClick={() => setAlertsEnabled(!alertsEnabled)}
-              className="p-6 bg-[#18181b] rounded-[2rem] border border-[#27272a] flex justify-between items-center cursor-pointer transition-all active:scale-95"
-            >
-              <div>
-                <p className="font-bold">Alertas de Temperatura</p>
-                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">
-                  {alertsEnabled ? 'Estado: Activado' : 'Estado: Desactivado'}
-                </p>
-              </div>
-              <div className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${alertsEnabled ? 'bg-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-gray-700'}`}>
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${alertsEnabled ? 'right-1' : 'left-1'}`}></div>
-              </div>
-            </div>
-
-            {/* Ajuste de Límite (Visual) */}
-            <div className="p-6 bg-[#18181b] rounded-[2rem] border border-[#27272a] flex justify-between items-center">
-              <div>
-                <p className="font-bold">Límite Crítico</p>
-                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">Temperatura máxima</p>
-              </div>
-              <div className="flex items-center gap-3">
-                 <span className="text-emerald-500 font-black text-lg">{tempLimit}°C</span>
-              </div>
-            </div>
-
-            {/* Opción de Soporte */}
-            <div className="p-6 bg-[#18181b] rounded-[2rem] border border-[#27272a] opacity-40">
-              <p className="font-bold text-sm">Calibración de Sensores</p>
-              <p className="text-[10px] uppercase font-bold">Próximamente</p>
-            </div>
+          <div className="p-6 bg-[#18181b] rounded-[2rem] border border-[#27272a] mb-4">
+            <p className="font-bold">Usuario</p>
+            <p className="text-xs text-gray-500">Sesión iniciada correctamente</p>
           </div>
-
-          <button 
-            onClick={() => setCurrentView('dashboard')}
-            className="w-full mt-12 bg-emerald-500 text-black font-black py-5 rounded-2xl shadow-xl shadow-emerald-500/10 hover:bg-emerald-400 transition-all active:scale-95"
-          >
-            GUARDAR Y CERRAR
-          </button>
+          <button onClick={handleLogout} className="w-full bg-red-500/10 text-red-500 font-black py-4 rounded-2xl border border-red-500/20 mb-4">CERRAR SESIÓN</button>
+          <button onClick={() => setCurrentView('dashboard')} className="w-full bg-emerald-500 text-black font-black py-4 rounded-2xl">VOLVER</button>
         </div>
       )}
     </div>
   );
 }
+
+// Sub-componente rápido para vincular
+const DeviceLinker = ({ onSuccess, onCancel }: any) => {
+  const [id, setId] = useState('');
+  const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await linkDevice(id, name);
+      onSuccess();
+    } catch (e) {
+      alert('Error al vincular: Verifica el ID del dispositivo');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen p-6">
+      <div className="w-full max-w-sm bg-[#18181b] p-8 rounded-[2.5rem] border border-[#27272a]">
+        <h2 className="text-2xl font-black mb-6">Vincular Incubadora</h2>
+        <form onSubmit={handleLink} className="space-y-4">
+          <input
+            required
+            placeholder="ID del Dispositivo (ej: MAC)"
+            className="w-full bg-[#09090b] border border-[#27272a] p-4 rounded-2xl outline-none focus:border-emerald-500"
+            onChange={e => setId(e.target.value)}
+          />
+          <input
+            required
+            placeholder="Nombre (ej: Incubadora 1)"
+            className="w-full bg-[#09090b] border border-[#27272a] p-4 rounded-2xl outline-none focus:border-emerald-500"
+            onChange={e => setName(e.target.value)}
+          />
+          <button className="w-full bg-emerald-500 text-black font-black p-4 rounded-2xl disabled:opacity-50" disabled={loading}>
+            {loading ? 'Vinculando...' : 'VINCULAR'}
+          </button>
+          <button type="button" onClick={onCancel} className="w-full text-gray-500 font-bold text-xs uppercase py-2">Cancelar</button>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 export default App;

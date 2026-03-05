@@ -1,23 +1,29 @@
 import { useState } from 'react';
-import { LogIn, ShieldCheck, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { LogIn, ShieldCheck, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { login } from '../api/client';
 
 export const Login = ({ onLogin, onGoToRegister }: any) => {
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
   const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Obtenemos los datos que se guardaron en el Registro
-    const savedEmail = localStorage.getItem('userEmail');
-    const savedPass = localStorage.getItem('userPass');
+    setLoading(true);
 
-    // Validamos: Si coincide con el guardado O con el admin por defecto
-    if ((email === savedEmail && pass === savedPass) || (email === 'admin@test.com' && pass === '1234')) { 
-      onLogin();
-    } else {
-      alert('Correo o contraseña incorrectos. ¿Ya te registraste?');
+    try {
+      const data = await login(email, pass);
+      // Guardamos el token para que el interceptor de axios lo use
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+
+      onLogin(data);
+    } catch (error: any) {
+      console.error('Login error:', error);
+      alert(error.response?.data?.message || 'Correo o contraseña incorrectos.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -31,29 +37,29 @@ export const Login = ({ onLogin, onGoToRegister }: any) => {
           <h1 className="text-3xl font-black tracking-tight">Ingresar</h1>
           <p className="text-gray-500 text-sm">Panel de Control de Incubadora</p>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative">
             <Mail className="absolute left-4 top-4 text-gray-500" size={20} />
-            <input 
+            <input
               required
-              type="email" 
-              placeholder="Correo" 
-              className="w-full bg-[#09090b] border border-[#27272a] p-4 pl-12 rounded-2xl focus:border-emerald-500 outline-none transition-all" 
-              onChange={(e) => setEmail(e.target.value)} 
+              type="email"
+              placeholder="Correo"
+              className="w-full bg-[#09090b] border border-[#27272a] p-4 pl-12 rounded-2xl focus:border-emerald-500 outline-none transition-all"
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
           <div className="relative">
             <Lock className="absolute left-4 top-4 text-gray-500" size={20} />
-            <input 
+            <input
               required
-              type={showPass ? "text" : "password"} 
-              placeholder="Contraseña" 
-              className="w-full bg-[#09090b] border border-[#27272a] p-4 pl-12 pr-12 rounded-2xl focus:border-emerald-500 outline-none transition-all" 
-              onChange={(e) => setPass(e.target.value)} 
+              type={showPass ? "text" : "password"}
+              placeholder="Contraseña"
+              className="w-full bg-[#09090b] border border-[#27272a] p-4 pl-12 pr-12 rounded-2xl focus:border-emerald-500 outline-none transition-all"
+              onChange={(e) => setPass(e.target.value)}
             />
-            <button 
+            <button
               type="button"
               onClick={() => setShowPass(!showPass)}
               className="absolute right-4 top-4 text-gray-500 hover:text-emerald-500"
@@ -61,15 +67,18 @@ export const Login = ({ onLogin, onGoToRegister }: any) => {
               {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
-          
-          <button className="w-full bg-emerald-500 text-black font-black p-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-emerald-400 active:scale-95 transition-all">
-            <LogIn size={20} />
-            <span>Entrar</span>
+
+          <button
+            disabled={loading}
+            className="w-full bg-emerald-500 text-black font-black p-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-emerald-400 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? <Loader2 className="animate-spin" size={20} /> : <LogIn size={20} />}
+            <span>{loading ? 'Ingresando...' : 'Entrar'}</span>
           </button>
         </form>
 
-        <button 
-          onClick={onGoToRegister} 
+        <button
+          onClick={onGoToRegister}
           className="w-full text-xs font-bold text-gray-500 uppercase tracking-widest hover:text-emerald-500 transition-colors"
         >
           ¿No tienes cuenta? Regístrate aquí
