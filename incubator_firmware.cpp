@@ -17,21 +17,22 @@ SSD1306Wire display(0x3C, 14, 12); // D5=SCL (14), D6=SDA (12)
 
 // Pines (Estrictamente según tu configuración física)
 #define Heater 15 // D8
-#define Cooler 13 // D7
+// #define Cooler 13 // D7 (Desactivado para usarlo como botón)
 #define Fan 10    // SD3 (Movido de D6/12 para evitar conflicto con SDA)
 #define Turning 2 // D4 (Movido de GPIO 9/SD2 para evitar crashes de Flash)
 #define DHTPIN 4  // D2
 #define DHTTYPE DHT11
 
-// Botones (D0=16, D1=5, D3=0)
-#define btn1 16 // D0 -> Gallina
+// Botones (D7=13, D3=0, D1=5)
+#define btn1 13 // D7 -> Gallina (Movido de D0 por falta de pullup)
 #define btn2 0  // D3 -> Pato
-#define btn3 5  // D1 -> Codorniz
+
+#define btn3 5 // D1 -> Codorniz
 
 #define Heater_OFF digitalWrite(Heater, LOW)
 #define Heater_ON digitalWrite(Heater, HIGH)
-#define Cooler_OFF digitalWrite(Cooler, LOW)
-#define Cooler_ON digitalWrite(Cooler, HIGH)
+// #define Cooler_OFF digitalWrite(Cooler, LOW)
+// #define Cooler_ON digitalWrite(Cooler, HIGH)
 #define Fan_OFF digitalWrite(Fan, LOW)
 #define Fan_ON digitalWrite(Fan, HIGH)
 #define Turning_OFF digitalWrite(Turning, LOW)
@@ -236,7 +237,7 @@ void setup() {
   Serial.begin(115200);
   pinMode(Heater, OUTPUT);
   digitalWrite(Heater, LOW);
-  pinMode(Cooler, OUTPUT);
+  // pinMode(Cooler, OUTPUT);
   pinMode(Fan, OUTPUT);
   pinMode(Turning, OUTPUT);
   pinMode(btn1, INPUT_PULLUP);
@@ -278,7 +279,7 @@ void loop() {
 void Temperature_control() {
   if (Temperature >= Setpoint + 0.5) {
     Heater_OFF;
-    Cooler_ON;
+    // Cooler_ON;
     Fan_ON;
     if (!alertTempHigh) {
       sendAlert("TEMP_HIGH", "Temp alta: " + String(Temperature) + "C");
@@ -287,14 +288,14 @@ void Temperature_control() {
   } else if (Temperature <= Setpoint - 0.5) {
     Heater_ON;
     Fan_ON;
-    Cooler_OFF;
+    // Cooler_OFF;
     if (!alertTempLow) {
       sendAlert("TEMP_LOW", "Temp baja: " + String(Temperature) + "C");
       alertTempLow = true;
     }
   } else {
     Heater_OFF;
-    Cooler_OFF;
+    // Cooler_OFF;
     Fan_ON;
     if (Temperature < Setpoint + 0.3 && alertTempHigh)
       alertTempHigh = false;
