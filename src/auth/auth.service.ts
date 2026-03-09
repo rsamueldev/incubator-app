@@ -28,9 +28,6 @@ export class AuthService {
             .auth.signUp({
                 email: user_mail,
                 password: user_password,
-                options: {
-                    emailRedirectTo: 'https://incubador-app.vercel.app/'
-                }
             });
 
         if (authError) {
