@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
 import { SupabaseService } from '../supabase/supabase.service';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -30,12 +31,15 @@ export class AuthService {
         const userId = authData.user?.id;
         if (!userId) throw new Error('Failed to get user ID from Supabase');
 
-        // 2. Crear el perfil en tu tabla pública 'User'
+        // 2. Hashear contraseña antes de guardar en tabla pública
+        const hashedPassword = await bcrypt.hash(user_password, 10);
+
+        // 3. Crear el perfil en tu tabla pública 'User'
         const user = await this.usersService.create({
             user_id: userId,
             user_mail,
             user_name,
-            user_password, // Guardamos la contraseña (opcional si ya está en auth)
+            user_password: hashedPassword,
         });
 
         return this.generateTokens(user.user_id, user.user_mail);
