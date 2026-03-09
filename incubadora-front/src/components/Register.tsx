@@ -14,7 +14,7 @@ export const Register = ({ onBack, onRegisterSuccess }: any) => {
     setLoading(true);
     try {
       await register(email, pass, name);
-      alert('Cuenta creada con éxito. Ahora puedes iniciar sesión.');
+      alert('Verifique su correo electronico y luego inicie sesion. Bienvenido');
       onRegisterSuccess();
     } catch (error: any) {
       console.error('Registration error:', error);

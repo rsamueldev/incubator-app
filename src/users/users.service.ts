@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ConflictException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
@@ -49,7 +49,7 @@ export class UsersService {
 
         if (error) {
             this.logger.error(`Error creating user: ${error.message}`);
-            throw new Error(`Failed to create user: ${error.message}`);
+            throw new ConflictException(`Failed to create user: ${error.message}`);
         }
 
         return data;

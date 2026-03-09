@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
 import { SupabaseService } from '../supabase/supabase.service';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AuthService {
@@ -16,12 +16,21 @@ export class AuthService {
     async register(registerDto: RegisterDto) {
         const { user_mail, user_name, user_password } = registerDto;
 
+        // 0. Verificar primero si el usuario ya existe en nuestra base de datos
+        const existingUser = await this.usersService.findByEmail(user_mail);
+        if (existingUser) {
+            throw new ConflictException('El correo electrónico ya está registrado.');
+        }
+
         // 1. Registrar en Supabase Auth (Sistema interno)
         const { data: authData, error: authError } = await this.supabaseService
             .getClient()
             .auth.signUp({
                 email: user_mail,
                 password: user_password,
+                options: {
+                    emailRedirectTo: 'https://incubador-app.vercel.app/'
+                }
             });
 
         if (authError) {
