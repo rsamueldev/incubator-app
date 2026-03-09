@@ -132,7 +132,9 @@ export const Dashboard = ({ onLogout, setView, selectedDevice, devices, onSelect
             <div className="bg-gradient-to-br from-orange-600 to-rose-600 p-6 rounded-[2.5rem] flex justify-between items-center shadow-lg shadow-orange-900/20">
               <div>
                 <p className="text-xs font-bold uppercase opacity-80 mb-1">Temperatura</p>
-                <h3 className="text-5xl font-black">{latest?.temperature ? `${latest.temperature}°C` : '0.0°C'}</h3>
+                <h3 className="text-5xl font-black">
+                  {latest && latest.temperature !== undefined ? `${Number(latest.temperature).toFixed(1)}°C` : '0.0°C'}
+                </h3>
               </div>
               <Thermometer size={48} className="opacity-30" />
             </div>
@@ -140,7 +142,9 @@ export const Dashboard = ({ onLogout, setView, selectedDevice, devices, onSelect
             <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-[2.5rem] flex justify-between items-center shadow-lg shadow-blue-900/20">
               <div>
                 <p className="text-xs font-bold uppercase opacity-80 mb-1">Humedad Relativa</p>
-                <h3 className="text-5xl font-black">{latest?.humidity ? `${latest.humidity}%` : '0%'}</h3>
+                <h3 className="text-5xl font-black">
+                  {latest && latest.humidity !== undefined ? `${Number(latest.humidity).toFixed(1)}%` : '0%'}
+                </h3>
               </div>
               <Droplets size={48} className="opacity-30" />
             </div>
@@ -174,7 +178,15 @@ export const Dashboard = ({ onLogout, setView, selectedDevice, devices, onSelect
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-            <p className="text-center text-[10px] text-gray-600 font-bold mt-4 uppercase tracking-[0.2em]">Monitoreo de Fase 1 Activo</p>
+
+            <p className="text-center text-[10px] text-emerald-500 font-bold mt-4 uppercase tracking-[0.2em]">
+              Incubando: {
+                selectedDevice?.mode === 3 ? 'Codorniz' :
+                  selectedDevice?.mode === 2 ? 'Pato' :
+                    selectedDevice?.mode === 1 ? 'Gallina' :
+                      'No seleccionado'
+              }
+            </p>
           </section>
         </main>
 

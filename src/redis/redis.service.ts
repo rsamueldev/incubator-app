@@ -21,8 +21,14 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
             password,
             tls: host !== 'localhost' ? {} : undefined,
             retryStrategy: (times) => {
+                if (times > 3) {
+                    this.logger.error('Redis retry limit reached. Stopping retries.');
+                    return null;
+                }
                 return Math.min(times * 50, 2000);
             },
+            maxRetriesPerRequest: 1,
+            enableReadyCheck: false
         });
 
 
@@ -42,22 +48,33 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
     // Guarda un valor en Redis
     async set(key: string, value: any, ttl?: number): Promise<void> {
-        const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
-        if (ttl) {
-            await this.client.set(key, stringValue, 'EX', ttl);
-        } else {
-            await this.client.set(key, stringValue);
+        try {
+            if (this.client.status !== 'ready') return;
+            const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
+            if (ttl) {
+                await this.client.set(key, stringValue, 'EX', ttl);
+            } else {
+                await this.client.set(key, stringValue);
+            }
+        } catch (error) {
+            this.logger.warn(`Redis set falló, ignorando caché: ${error.message}`);
         }
     }
 
     // Obtiene un valor de Redis
     async get<T>(key: string): Promise<T | null> {
-        const value = await this.client.get(key);
-        if (!value) return null;
         try {
-            return JSON.parse(value) as T;
-        } catch {
-            return value as unknown as T;
+            if (this.client.status !== 'ready') return null;
+            const value = await this.client.get(key);
+            if (!value) return null;
+            try {
+                return JSON.parse(value) as T;
+            } catch {
+                return value as unknown as T;
+            }
+        } catch (error) {
+            this.logger.warn(`Redis get falló, usando base de datos: ${error.message}`);
+            return null;
         }
     }
 }
