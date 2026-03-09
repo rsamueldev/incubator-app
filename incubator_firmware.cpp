@@ -25,8 +25,8 @@ SSD1306Wire display(0x3C, 14, 12); // D5=SCL (14), D6=SDA (12)
 
 // Botones (D0=16, D1=5, D3=0)
 #define btn1 16 // D0 -> Gallina
-#define btn2 5  // D1 -> Pato
-#define btn3 0  // D3 -> Codorniz
+#define btn2 0  // D3 -> Pato
+#define btn3 5  // D1 -> Codorniz
 
 #define Heater_OFF digitalWrite(Heater, LOW)
 #define Heater_ON digitalWrite(Heater, HIGH)
@@ -358,7 +358,7 @@ void checkEggSelection() {
     syncEggMode(1);
     delay(500); // Debounce
   }
-  if (digitalRead(btn2) == LOW) { // D1 -> Pato
+  if (digitalRead(btn2) == LOW) { // D3 -> Pato
     eggType = 2;
     turningInterval = 108000;
     turningDuration = 600;
@@ -368,7 +368,7 @@ void checkEggSelection() {
     syncEggMode(2);
     delay(500); // Debounce
   }
-  if (digitalRead(btn3) == LOW) { // D3 -> Codorniz
+  if (digitalRead(btn3) == LOW) { // D1 -> Codorniz
     eggType = 3;
     turningInterval = 36000;
     turningDuration = 300;

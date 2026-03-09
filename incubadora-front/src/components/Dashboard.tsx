@@ -166,6 +166,14 @@ export const Dashboard = ({ onLogout, setView, selectedDevice, devices, onSelect
                   <Tooltip
                     contentStyle={{ backgroundColor: '#09090b', border: '1px solid #27272a', borderRadius: '12px' }}
                     itemStyle={{ color: '#10b981' }}
+                    labelFormatter={(label) => {
+                      if (!label) return '';
+                      const d = new Date(label);
+                      return d.toLocaleString('es-ES', {
+                        month: 'short', day: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                      });
+                    }}
                   />
                   <Area
                     type="monotone"
@@ -181,9 +189,9 @@ export const Dashboard = ({ onLogout, setView, selectedDevice, devices, onSelect
 
             <p className="text-center text-[10px] text-emerald-500 font-bold mt-4 uppercase tracking-[0.2em]">
               Incubando: {
-                selectedDevice?.mode === 3 ? 'Codorniz' :
-                  selectedDevice?.mode === 2 ? 'Pato' :
-                    selectedDevice?.mode === 1 ? 'Gallina' :
+                Number(selectedDevice?.mode) === 3 ? 'Codorniz' :
+                  Number(selectedDevice?.mode) === 2 ? 'Pato' :
+                    Number(selectedDevice?.mode) === 1 ? 'Gallina' :
                       'No seleccionado'
               }
             </p>
